@@ -1258,7 +1258,7 @@ trait ParallelTesting extends RunnerOrchestration { self =>
    *  Tests in the first part of the tuple must be executed before the second.
    *  Both testsRequires explicit delete().
    */
-  def compileTastyInDir(f: String, flags0: TestFlags, blacklist: Set[String], recompilationBlacklist: Set[String])(
+  def compileTastyInDir(f: String, flags0: TestFlags, blacklist: Set[String], decompilationBlacklist: Set[String], recompilationBlacklist: Set[String])(
       implicit testGroup: TestGroup): TastyCompilationTest = {
     val outDir = defaultOutputDir + testGroup + "/"
     val flags = flags0 and "-Yretain-trees"
@@ -1280,7 +1280,7 @@ trait ParallelTesting extends RunnerOrchestration { self =>
 
     val targets2 =
       filteredFiles
-        .filter(f => dotty.tools.io.File(f.toPath).changeExtension("decompiled").exists)
+        .filter(f => !decompilationBlacklist(f.getName))
         .map { f =>
           val classpath = createOutputDirsForFile(f, sourceDir, outDir)
           JointCompilationSource(testGroup.name, Array(f), flags.withClasspath(classpath.getPath), classpath, decompilation = true)
