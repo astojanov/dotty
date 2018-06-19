@@ -108,7 +108,24 @@ class FirstTransform extends MiniPhase with InfoTransformer { thisPhase =>
     cpy.Template(impl)(self = EmptyValDef)
   }
 
-  override def transformDefDef(ddef: DefDef)(implicit ctx: Context) = {
+  override def transformDefDef(ddef: DefDef)(implicit ctx: Context): Tree = {
+    if (ddef.name == nme.unapply && !ddef.symbol.is(Synthetic)) {
+      val resultType = ddef.tpt.tpe.finalResultType
+      val refined = resultType.select(tpnme.UncheckedRefinedArgument)
+      if (refined.typeSymbol.exists) {
+        val arg = ddef.vparamss.head.head
+        if (!(refined <:< arg.tpt.tpe)) {
+          ctx.error(i"Abstract type refinement $refined (${refined.widenDealias}) is not a subtype of the unapply argument (${arg.tpt.tpe.widenDealias})", ddef.pos)
+        } else if (!(refined <:< arg.tpe)) {
+          ctx.warning(
+            i"""Abstract type refinement $refined (${refined.widenDealias}) should be a subtype of the unapply argument singleton type(${arg.name}.type).
+               |
+               |This type constraint can be added as follows:
+               |  def unapply(x: T): U { type ${tpnme.UncheckedRefinedArgument} <: x.type } = ...
+             """.stripMargin, ddef.pos)
+        }
+      }
+    }
     if (ddef.symbol.hasAnnotation(defn.NativeAnnot)) {
       ddef.symbol.resetFlag(Deferred)
       DefDef(ddef.symbol.asTerm,
