@@ -3,7 +3,11 @@ Complex(1.*(4).-(2.*(2)), 1.*(2).+(2.*(4)))
 List(Complex(2,0), Complex(-4,4), Complex(-2,6))
 ((vout: scala.Array[Complex[scala.Int]], v1: scala.Array[Complex[scala.Int]], v2: scala.Array[Complex[scala.Int]]) => {
   val n: scala.Int = vout.length
-  scala.Predef.intWrapper(0).until(n).foreach[scala.Unit](((i: scala.Int) => vout.update(i, Complex.apply[scala.Int](v1.apply(i).re.*(v2.apply(i).re).-(v1.apply(i).im.*(v2.apply(i).im)), v1.apply(i).re.*(v2.apply(i).im).+(v1.apply(i).im.*(v2.apply(i).re))))))
+  var i: scala.Int = 0
+  while (i.<(n)) {
+    vout.update(i, Complex.apply[scala.Int](v1.apply(i).re.*(v2.apply(i).re).-(v1.apply(i).im.*(v2.apply(i).im)), v1.apply(i).re.*(v2.apply(i).im).+(v1.apply(i).im.*(v2.apply(i).re))))
+    i = i.+(1)
+  }
 })
 List(25, 30, 20, 43, 44)
 
@@ -12,11 +16,19 @@ List(25, 30, 20, 43, 44)
 ((vout: scala.Array[scala.Int], a: scala.Array[scala.Array[scala.Int]], v: scala.Array[scala.Int]) => {
   val n: scala.Int = vout.length
   val m: scala.Int = v.length
-  scala.Predef.intWrapper(0).until(n).foreach[scala.Unit](((i: scala.Int) => vout.update(i, {
-    var sum: scala.Int = 0
-    scala.Predef.intWrapper(0).until(m).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(v.apply(i).*(a.apply(i).apply(i)))))
-    (sum: scala.Int)
-  })))
+  var i: scala.Int = 0
+  while (i.<(n)) {
+    vout.update(i, {
+      var sum: scala.Int = 0
+      var i: scala.Int = 0
+      while (i.<(m)) {
+        sum = sum.+(v.apply(i).*(a.apply(i).apply(i)))
+        i = i.+(1)
+      }
+      (sum: scala.Int)
+    })
+    i = i.+(1)
+  }
 })
 
 
@@ -224,7 +236,11 @@ List(25, 30, 20, 43, 44)
     vout.update(2, v.apply(1).*(10))
     vout.update(3, {
       var sum: scala.Int = 0
-      scala.Predef.intWrapper(0).until(5).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(v.apply(i).*(arr.apply(3).apply(i)))))
+      var i: scala.Int = 0
+      while (i.<(5)) {
+        sum = sum.+(v.apply(i).*(arr.apply(3).apply(i)))
+        i = i.+(1)
+      }
       (sum: scala.Int)
     })
     vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))
@@ -241,15 +257,19 @@ List(25, 30, 20, 43, 44)
   vout.update(2, v.apply(1).*(10))
   vout.update(3, {
     var sum: scala.Int = 0
-    scala.Predef.intWrapper(0).until(5).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(v.apply(i).*({
-      val array: scala.Array[scala.Int] = new scala.Array[scala.Int](5)
-      array.update(0, 0)
-      array.update(1, 0)
-      array.update(2, 2)
-      array.update(3, 3)
-      array.update(4, 5)
-      array
-    }.apply(i)))))
+    var i: scala.Int = 0
+    while (i.<(5)) {
+      sum = sum.+(v.apply(i).*({
+        val array: scala.Array[scala.Int] = new scala.Array[scala.Int](5)
+        array.update(0, 0)
+        array.update(1, 0)
+        array.update(2, 2)
+        array.update(3, 3)
+        array.update(4, 5)
+        array
+      }.apply(i)))
+      i = i.+(1)
+    }
     (sum: scala.Int)
   })
   vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))
@@ -276,7 +296,11 @@ List(25, 30, 20, 43, 44)
     vout.update(2, v.apply(1).*(10))
     vout.update(3, {
       var sum: scala.Int = 0
-      scala.Predef.intWrapper(0).until(5).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(v.apply(i).*(row.apply(i)))))
+      var i: scala.Int = 0
+      while (i.<(5)) {
+        sum = sum.+(v.apply(i).*(row.apply(i)))
+        i = i.+(1)
+      }
       (sum: scala.Int)
     })
     vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))

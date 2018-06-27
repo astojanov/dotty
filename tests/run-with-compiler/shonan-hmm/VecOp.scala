@@ -14,8 +14,11 @@ class VecSta extends VecOp[Int, Unit] {
 
 class VecDyn extends VecOp[Expr[Int], Expr[Unit]] {
   def iter: Vec[Expr[Int], Expr[Unit]] => Expr[Unit] = arr => '{
-    for (i <- 0 until ~arr.size)
+    var i = 0
+    while (i < ~arr.size) {
       ~arr('(i))
+      i += 1
+    }
   }
   override def toString(): String = s"DynVec"
 }

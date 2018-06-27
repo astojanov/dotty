@@ -20,8 +20,11 @@ class VecRDyn[T: Type] extends VecDyn with VecROp[Expr[Int], Expr[T], Expr[Unit]
   def reduce: ((Expr[T], Expr[T]) => Expr[T], Expr[T], Vec[Expr[Int], Expr[T]]) => Expr[T] = {
     (plus, zero, vec) => '{
       var sum = ~zero
-      for (i <- 0 until ~vec.size)
+      var i = 0
+      while (i < ~vec.size) {
         sum = ~{ plus('(sum), vec('(i))) }
+        i += 1
+      }
       sum
     }
   }
