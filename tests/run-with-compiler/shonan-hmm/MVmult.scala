@@ -93,8 +93,25 @@ object MVmult {
   }
 
   def mvmult_let(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
-    val (n, m, a2) = amatCopy(a, copy_row_let)
-    mvmult_abs0(new RingIntOPExpr, new VecRStaOptDynInt(new RingIntPExpr))(n, m, a2)
+    initRows(a) { rows =>
+      val (n, m, a2) = amat2(a, rows)
+      mvmult_abs0(new RingIntOPExpr, new VecRStaOptDynInt(new RingIntPExpr))(n, m, a2)
+    }
+  }
+
+  def initRows[T](a: Array[Array[Int]])(cont: Array[Expr[Array[Int]]] => Expr[T]): Expr[T] = {
+    import Lifters._
+    def loop(i: Int, acc: List[Expr[Array[Int]]]): Expr[T] = {
+      if (i >= a.length) cont(acc.toArray.reverse)
+      else if (a(i).count(_ != 0) < VecRStaOptDynInt.threshold) {
+        val default: Expr[Array[Int]] = '(null.asInstanceOf[Array[Int]]) // never accessed
+        loop(i + 1, default :: acc)
+      } else '{
+        val row = ~a(i).toExpr
+        ~{ loop(i + 1, '(row) :: acc) }
+      }
+    }
+    loop(0, Nil)
   }
 
   def amat1(a: Array[Array[Int]], aa: Expr[Array[Array[Int]]]): (Int, Int, Vec[PV[Int], Vec[PV[Int], PV[Int]]]) = {
@@ -104,6 +121,16 @@ object MVmult {
       case (Sta(i), Sta(j)) => Sta(a(i)(j))
       case (Sta(i), Dyn(j)) => Dyn('((~aa)(~i.toExpr)(~j)))
       case (i, j) => Dyn('{ (~aa)(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
+    }))
+    (n, m, vec)
+  }
+
+  def amat2(a: Array[Array[Int]], refs: Array[Expr[Array[Int]]]): (Int, Int, Vec[PV[Int], Vec[PV[Int], PV[Int]]]) = {
+    val n = a.length
+    val m = a(0).length
+    val vec: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
+      case (Sta(i), Sta(j)) => Sta(a(i)(j))
+      case (Sta(i), Dyn(j)) => Dyn('((~refs(i))(~j)))
     }))
     (n, m, vec)
   }
