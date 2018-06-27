@@ -65,6 +65,16 @@ object Test {
     println()
 
     println(MVmult.mvmult_ac(a).show)
+    println()
+    println()
+    println()
+
+    println(MVmult.mvmult_opt(a).show)
+    println()
+    println()
+    println()
+
+    println(MVmult.mvmult_roll(a).show)
 
   }
 }

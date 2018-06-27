@@ -68,7 +68,7 @@ case class RingPV[U: Liftable](staRing: Ring[U], dynRing: Ring[Expr[U]]) extends
 
 class RingIntPExpr extends RingPV(RingInt, RingIntExpr)
 
-class RingIntOPCode extends RingIntPExpr {
+class RingIntOPExpr extends RingIntPExpr {
   override def add = (x: PV[Int], y: PV[Int]) => (x, y) match {
     case (Sta(0), y) => y
     case (x, Sta(0)) => x
