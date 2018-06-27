@@ -230,3 +230,27 @@ List(25, 30, 20, 43, 44)
     vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))
   })
 }
+
+
+
+((vout: scala.Array[scala.Int], v: scala.Array[scala.Int]) => {
+  if (5.!=(vout.length)) throw new scala.IndexOutOfBoundsException("5") else ()
+  if (5.!=(v.length)) throw new scala.IndexOutOfBoundsException("5") else ()
+  vout.update(0, v.apply(0).*(5).+(v.apply(3).*(5)))
+  vout.update(1, v.apply(2).*(10))
+  vout.update(2, v.apply(1).*(10))
+  vout.update(3, {
+    var sum: scala.Int = 0
+    scala.Predef.intWrapper(0).until(5).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(v.apply(i).*({
+      val array: scala.Array[scala.Int] = new scala.Array[scala.Int](5)
+      array.update(0, 0)
+      array.update(1, 0)
+      array.update(2, 2)
+      array.update(3, 3)
+      array.update(4, 5)
+      array
+    }.apply(i)))))
+    (sum: scala.Int)
+  })
+  vout.update(4, v.apply(2).*(3).+(v.apply(4).*(7)))
+})

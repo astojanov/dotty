@@ -55,54 +55,82 @@ object MVmult {
   }
 
   def mvmult_ac(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
-    val n = a.length
-    val m = a(0).length
     import Lifters._
     '{
       val arr = ~a.toExpr
       ~{
-        val a2: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
-          case (Sta(i), Sta(j)) => Sta(a(i)(j))
-          case (Sta(i), Dyn(j)) => Dyn('(arr(~i.toExpr)(~j)))
-          case (i, j) => Dyn( '{ arr(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
-        }))
-        mvmult_abs0(new RingIntPExpr, new VecRStaDyn(new RingIntPExpr))(a.length, a(0).length, a2)
+        val (n, m, a2) = amat1(a, '(arr))
+        mvmult_abs0(new RingIntPExpr, new VecRStaDyn(new RingIntPExpr))(n, m, a2)
       }
     }
   }
 
   def mvmult_opt(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
-    val n = a.length
-    val m = a(0).length
     import Lifters._
     '{
       val arr = ~a.toExpr
       ~{
-        val a2: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
-          case (Sta(i), Sta(j)) => Sta(a(i)(j))
-          case (Sta(i), Dyn(j)) => Dyn('(arr(~i.toExpr)(~j)))
-          case (i, j) => Dyn( '{ arr(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
-        }))
-        mvmult_abs0(new RingIntOPExpr, new VecRStaDyn(new RingIntPExpr))(a.length, a(0).length, a2)
+        val (n, m, a2) = amat1(a, '(arr))
+        mvmult_abs0(new RingIntOPExpr, new VecRStaDyn(new RingIntPExpr))(n, m, a2)
       }
     }
   }
 
   def mvmult_roll(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
-    val n = a.length
-    val m = a(0).length
     import Lifters._
     '{
       val arr = ~a.toExpr
       ~{
-        val a2: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
-          case (Sta(i), Sta(j)) => Sta(a(i)(j))
-          case (Sta(i), Dyn(j)) => Dyn('(arr(~i.toExpr)(~j)))
-          case (i, j) => Dyn( '{ arr(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
-        }))
-        mvmult_abs0(new RingIntOPExpr, new VecRStaOptDynInt(new RingIntPExpr))(a.length, a(0).length, a2)
+        val (n, m, a2) = amat1(a, '(arr))
+        mvmult_abs0(new RingIntOPExpr, new VecRStaOptDynInt(new RingIntPExpr))(n, m, a2)
       }
     }
+  }
+
+  def mvmult_let1(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
+    val (n, m, a2) = amatCopy(a, copy_row1)
+    mvmult_abs0(new RingIntOPExpr, new VecRStaOptDynInt(new RingIntPExpr))(n, m, a2)
+  }
+
+  def mvmult_let(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
+    val (n, m, a2) = amatCopy(a, copy_row_let)
+    mvmult_abs0(new RingIntOPExpr, new VecRStaOptDynInt(new RingIntPExpr))(n, m, a2)
+  }
+
+  def amat1(a: Array[Array[Int]], aa: Expr[Array[Array[Int]]]): (Int, Int, Vec[PV[Int], Vec[PV[Int], PV[Int]]]) = {
+    val n = a.length
+    val m = a(0).length
+    val vec: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
+      case (Sta(i), Sta(j)) => Sta(a(i)(j))
+      case (Sta(i), Dyn(j)) => Dyn('((~aa)(~i.toExpr)(~j)))
+      case (i, j) => Dyn('{ (~aa)(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
+    }))
+    (n, m, vec)
+  }
+
+  def amatCopy(a: Array[Array[Int]], copyRow: Array[Int] => (Expr[Int] => Expr[Int])): (Int, Int, Vec[PV[Int], Vec[PV[Int], PV[Int]]]) = {
+    val n = a.length
+    val m = a(0).length
+    val vec: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
+      case (Sta(i), Sta(j)) => Sta(a(i)(j))
+      case (Sta(i), Dyn(j)) =>
+        val defrec = copyRow(a(i))
+        Dyn(defrec(j))
+      case (i, j) => ???
+    }))
+    (n, m, vec)
+  }
+
+  def copy_row1: Array[Int] => (Expr[Int] => Expr[Int]) = v => {
+    import Lifters._
+    val arr = v.toExpr
+    i => '{ (~arr).apply(~i) }
+  }
+
+  def copy_row_let: Array[Int] => (Expr[Int] => Expr[Int]) = v => {
+    import Lifters._
+    val arr: Expr[Array[Int]] = ??? // FIXME used genlet v.toExpr
+    i => '{ (~arr).apply(~i) }
   }
 
   private def mvmult_abs0(ring: Ring[PV[Int]], vecOp: VecROp[PV[Int], PV[Int], Expr[Unit]])(n: Int, m: Int, a: Vec[PV[Int], Vec[PV[Int], PV[Int]]]): Expr[(Array[Int], Array[Int]) => Unit] = {
@@ -119,6 +147,5 @@ object MVmult {
       }
     }
   }
-
 
 }
