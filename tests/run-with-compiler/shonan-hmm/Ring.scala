@@ -2,11 +2,11 @@
 import scala.quoted._
 
 trait Ring[T] {
-  val zero: T
+  def zero: T
   val one: T
-  val add: (x: T, y: T) => T
-  val sub: (x: T, y: T) => T
-  val mul: (x: T, y: T) => T
+  def add: (x: T, y: T) => T
+  def sub: (x: T, y: T) => T
+  def mul: (x: T, y: T) => T
 
   implicit class Ops(x: T) {
     def +(y: T): T = add(x, y)
@@ -52,16 +52,38 @@ case class RingPV[U: Liftable](staRing: Ring[U], dynRing: Ring[Expr[U]]) extends
 
   val zero: T = Sta(staRing.zero)
   val one: T = Sta(staRing.one)
-  val add = (x: T, y: T) => (x, y) match {
+  def add = (x: T, y: T) => (x, y) match {
     case (Sta(x), Sta(y)) => Sta(x + y)
     case (x, y) => Dyn(dyn(x) + dyn(y))
   }
-  val sub = (x: T, y: T) => (x, y) match {
+  def sub = (x: T, y: T) => (x, y) match {
     case (Sta(x), Sta(y)) => Sta(x - y)
     case (x, y) => Dyn(dyn(x) - dyn(y))
   }
-  val mul = (x: T, y: T) => (x, y) match {
+  def mul = (x: T, y: T) => (x, y) match {
     case (Sta(x), Sta(y)) => Sta(x * y)
     case (x, y) => Dyn(dyn(x) * dyn(y))
+  }
+}
+
+class RingIntPExpr extends RingPV(RingInt, RingIntExpr)
+
+class RingIntOPCode extends RingIntPExpr {
+  override def add = (x: PV[Int], y: PV[Int]) => (x, y) match {
+    case (Sta(0), y) => y
+    case (x, Sta(0)) => x
+    case (x, y) => super.add(x, y)
+  }
+  override def sub = (x: T, y: T) => (x, y) match {
+    case (Sta(0), y) => y
+    case (x, Sta(0)) => x
+    case (x, y) => super.sub(x, y)
+  }
+  override def mul = (x: T, y: T) => (x, y) match {
+    case (Sta(0), y) => Sta(0)
+    case (x, Sta(0)) => Sta(0)
+    case (Sta(1), y) => y
+    case (x, Sta(1)) => x
+    case (x, y) => super.mul(x, y)
   }
 }

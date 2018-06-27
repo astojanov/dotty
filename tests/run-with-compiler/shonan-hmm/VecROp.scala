@@ -16,21 +16,21 @@ class StaticVecR[T](r: Ring[T]) extends VecSta with VecROp[Int, T, Unit] {
   override def toString(): String = s"StaticVecR($r)"
 }
 
-class VecRDyn[T: Type](r: Ring[Expr[T]]) extends VecDyn with VecROp[Expr[Int], Expr[T], Expr[Unit]] {
+class VecRDyn[T: Type] extends VecDyn with VecROp[Expr[Int], Expr[T], Expr[Unit]] {
   def reduce: ((Expr[T], Expr[T]) => Expr[T], Expr[T], Vec[Expr[Int], Expr[T]]) => Expr[T] = {
     (plus, zero, vec) => '{
-      var sum = ~r.zero
+      var sum = ~zero
       for (i <- 0 until ~vec.size)
         sum = ~{ plus('(sum), vec('(i))) }
       sum
     }
   }
-  override def toString(): String = s"VecRDyn($r)"
+  override def toString(): String = s"VecRDyn"
 }
 
-class VecRStaDim[T: Type](r: Ring[Expr[T]]) extends VecROp[Int, Expr[T], Expr[Unit]]  {
-  val M = new StaticVecR[Expr[T]](r)
-  def reduce: ((Expr[T], Expr[T]) => Expr[T], Expr[T], Vec[Int, Expr[T]]) => Expr[T] = M.reduce
+class VecRStaDim[T: Type](r: Ring[T]) extends VecROp[Int, T, Expr[Unit]]  {
+  val M = new StaticVecR[T](r)
+  def reduce: ((T, T) => T, T, Vec[Int, T]) => T = M.reduce
   val seq: (Expr[Unit], Expr[Unit]) => Expr[Unit] = (e1, e2) => '{ ~e1; ~e2 }
   // val iter:  (arr: Vec[]) = reduce seq .<()>. arr
   def iter: Vec[Int, Expr[Unit]] => Expr[Unit] = arr => {
@@ -42,13 +42,13 @@ class VecRStaDim[T: Type](r: Ring[Expr[T]]) extends VecROp[Int, Expr[T], Expr[Un
   override def toString(): String = s"VecRStaDim($r)"
 }
 
-class VecRStaDyn[T : Type : Liftable](r: Ring[Expr[T]]) extends VecROp[PV[Int], Expr[T], Expr[Unit]] {
-  val VSta = new VecRStaDim(r)
-  val VDyn = new VecRDyn(r)
+class VecRStaDyn[T : Type : Liftable](r: Ring[PV[T]]) extends VecROp[PV[Int], PV[T], Expr[Unit]] {
+  val VSta: VecROp[Int, PV[T], Expr[Unit]] = new VecRStaDim(r)
+  val VDyn = new VecRDyn
   val dyn = Dyns.dyn[T]
-  def reduce: ((Expr[T], Expr[T]) => Expr[T], Expr[T], Vec[PV[Int], Expr[T]]) => Expr[T] = { (plus, zero, vec) => vec match {
+  def reduce: ((PV[T], PV[T]) => PV[T], PV[T], Vec[PV[Int], PV[T]]) => PV[T] = { (plus, zero, vec) => vec match {
       case Vec(Sta(n), v) => VSta.reduce(plus, zero, Vec(n, i => v(Sta(i))))
-      case Vec(Dyn(n), v) => VDyn.reduce((x, y) => plus(x, y), zero, Vec(n, i => v(Dyn(i))))
+      case Vec(Dyn(n), v) => Dyn(VDyn.reduce((x, y) => dyn(plus(Dyn(x), Dyn(y))), dyn(zero), Vec(n, i => dyn(v(Dyn(i))))))
     }
   }
   def iter: Vec[PV[Int], Expr[Unit]] => Expr[Unit] =  arr => {

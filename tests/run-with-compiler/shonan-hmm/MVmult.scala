@@ -31,7 +31,7 @@ object MVmult {
         val a_ = Vec('(n), (i: Expr[Int]) => Vec('(m), (j: Expr[Int]) => '{ a(~i)(~j) } ))
         val v_ = Vec('(m), (i: Expr[Int]) => '(v(~i)))
 
-        val MV = new MVmult[Expr[Int], Expr[Int], Expr[Unit]](RingIntExpr, new VecRDyn(RingIntExpr))
+        val MV = new MVmult[Expr[Int], Expr[Int], Expr[Unit]](RingIntExpr, new VecRDyn)
         MV.mvmult(vout_, a_, v_)
       }
     }
@@ -41,7 +41,8 @@ object MVmult {
     val MV = new MVmult[Int, Expr[Int], Expr[Unit]](RingIntExpr, new VecRStaDim(RingIntExpr))
     '{
       (vout, a, v) => {
-        assert (~n.toExpr == vout.length && ~m.toExpr == v.length)
+        if (~n.toExpr != vout.length) throw new IndexOutOfBoundsException(~n.toString.toExpr)
+        if (~m.toExpr != v.length) throw new IndexOutOfBoundsException(~m.toString.toExpr)
         ~{
           val vout_ = OVec(n, (i, x: Expr[Int]) => '(vout(~i.toExpr) = ~x))
           val a_ = Vec(n, i => Vec(m, j => '{ a(~i.toExpr)(~j.toExpr) } ))
@@ -56,32 +57,50 @@ object MVmult {
   def mvmult_ac(a: Array[Array[Int]]): Expr[(Array[Int], Array[Int]) => Unit] = {
     val n = a.length
     val m = a(0).length
-
-    // Array lifters
-
-
+    import Lifters._
     '{
-      val arr = Array( // FIXMR lift a
-        Array( 5,  0,  0,  5,  0),
-        Array( 0,  0, 10,  0,  0),
-        Array( 0, 10,  0,  0,  0),
-        Array( 0,  0,  2,  3,  5),
-        Array( 0,  0,  3,  0,  7)
-      )
+      val arr = ~a.toExpr
+      ~{
+        val a2: Vec[PV[Int], Vec[PV[Int], PV[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => (i, j) match {
+          case (Sta(i), Sta(j)) => Sta(a(i)(j))
+          case (Sta(i), Dyn(j)) => Dyn('(arr(~i.toExpr)(~j)))
+          case (i, j) => Dyn( '{ arr(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
+        }))
+        mvmult_abs(a.length, a(0).length, a2)
+      }
+    }
+  }
+
+  private def mvmult_abs(n: Int, m: Int, a: Vec[PV[Int], Vec[PV[Int], PV[Int]]]): Expr[(Array[Int], Array[Int]) => Unit] = {
+    '{
       (vout, v) => {
-        assert (~n.toExpr == vout.length && ~m.toExpr == v.length)
+        if (~n.toExpr != vout.length) throw new IndexOutOfBoundsException(~n.toString.toExpr)
+        if (~m.toExpr != v.length) throw new IndexOutOfBoundsException(~m.toString.toExpr)
         ~{
-          val vout_ : OVec[PV[Int], Expr[Int], Expr[Unit]] = OVec(Sta(n), (i, x) => '(vout(~Dyns.dyni(i)) = ~x))
-          val a2: Vec[PV[Int], Vec[PV[Int], Expr[Int]]] = Vec(Sta(n), i => Vec(Sta(m), j => Dyns.dyn((i, j) match {
-            case (Sta(i), Sta(j)) => Sta(a(i)(j))
-            case (Sta(i), Dyn(j)) => Dyn('(arr(~i.toExpr)(~j)))
-            case (i, j) => Dyn('{ arr(~(Dyns.dyni(i)))(~(Dyns.dyni(j))) })
-          })))
-          val v_ : Vec[PV[Int], Expr[Int]] = Vec(Sta(m), i => '(v(~Dyns.dyni(i))))
-          val MV = new MVmult[PV[Int], Expr[Int], Expr[Unit]](RingIntExpr, new VecRStaDyn(RingIntExpr))
-          MV.mvmult(vout_, a2, v_)
+          val vout_ : OVec[PV[Int], PV[Int], Expr[Unit]] = OVec(Sta(n), (i, x) => '(vout(~Dyns.dyni(i)) = ~Dyns.dyn(x)))
+          val v_ : Vec[PV[Int], PV[Int]] = Vec(Sta(m), i => Dyn('(v(~Dyns.dyni(i)))))
+          val MV = new MVmult[PV[Int], PV[Int], Expr[Unit]](new RingIntPExpr, new VecRStaDyn(new RingIntPExpr))
+          MV.mvmult(vout_, a, v_)
         }
       }
     }
   }
+
+
+
+//  let mvmult_abs : _ →
+//  amat → (float array → float array → unit) code =
+//    fun mvmult → fun {n;m;a} →
+//  .<fun vout v →
+//  assert (n = Array.length vout && m = Array.length v);
+//  .~(let vout = OVec (Sta n, fun i v → .<vout.(.~(dyni i)) ← .~(dynf v)>.) in
+//  let v = Vec (Sta m, fun j → Dyn .<v.(.~(dyni j))>.) in
+//  mvmult vout a v)
+//  >.
+//  val mvmult_abs :
+//    ((int pv, float pv, unit code) Vector.ovec →
+//    (int pv, (int pv, float pv) Vector.vec) Vector.vec →
+//    (int pv, float pv) Vector.vec → unit code) →
+//  amat → (float array → float array → unit) code = <fun>
+
 }

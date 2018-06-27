@@ -7,8 +7,6 @@ import scala.quoted._
 object Test {
 
   def main(args: Array[String]): Unit = {
-    println("dafd")
-
     {
       val intComplex = new RingComplex(RingInt)
       import intComplex._
