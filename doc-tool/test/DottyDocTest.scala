@@ -1,6 +1,7 @@
 package dotty.tools
 package dottydoc
 
+import dotc.Compiler
 import dotc.core.Contexts.{ Context, ContextBase, FreshContext }
 import dotc.core.Comments.{ ContextDoc, ContextDocstrings }
 import dotc.util.SourceFile
@@ -18,7 +19,7 @@ import java.io.{ BufferedWriter, OutputStreamWriter }
 trait DottyDocTest extends MessageRendering {
   dotty.tools.dotc.parsing.Scanners // initialize keywords
 
-  implicit val ctx: FreshContext = {
+  private def freshCtx(extraClasspath: List[String]): FreshContext = {
     val base = new ContextBase
     import base.settings._
     val ctx = base.initialCtx.fresh
@@ -30,12 +31,13 @@ trait DottyDocTest extends MessageRendering {
     ctx.setProperty(ContextDoc, new ContextDottydoc)
     ctx.setSetting(
       ctx.settings.classpath,
-      dotty.Jars.dottyLib
+      (dotty.Jars.dottyLib :: extraClasspath).mkString(java.io.File.pathSeparator)
     )
     ctx.setReporter(new StoreReporter(ctx.reporter))
     base.initialize()(ctx)
     ctx
   }
+  implicit val ctx: FreshContext = freshCtx(Nil)
 
   private def compilerWithChecker(assertion: Map[String, Package] => Unit) = new DocCompiler {
     private[this] val assertionPhase: List[List[Phase]] =
@@ -91,9 +93,49 @@ trait DottyDocTest extends MessageRendering {
     run.compile(sources)
   }
 
-  def checkSources(sourceFiles: List[SourceFile])(assertion: Map[String, Package] => Unit): Unit = {
+  def checkFromSource(sourceFiles: List[SourceFile])(assertion: Map[String, Package] => Unit): Unit = {
     val c = compilerWithChecker(assertion)
     val run = c.newRun
     run.compileSources(sourceFiles)
+  }
+
+  def checkFromTasty(classNames: List[String], sources: List[SourceFile])(assertion: Map[String, Package] => Unit): Unit = {
+    IOUtils.inTempDirectory { tmp =>
+      val ctx = "shadow ctx"
+      val out = tmp.resolve("out")
+
+      val dotcCtx = {
+        val ctx = freshCtx(out.toString :: Nil)
+        ctx.setSetting(ctx.settings.outputDir, out.toString)
+      }
+      val dotc = new Compiler
+      val run = dotc.newRun(dotcCtx)
+      run.compileSources(sources)
+      assert(!dotcCtx.reporter.hasErrors)
+
+      val fromTastyCtx = {
+        val ctx = freshCtx(out.toString :: Nil)
+        ctx.setSetting(ctx.settings.fromTasty, true)
+      }
+      val fromTastyCompiler = compilerWithChecker(assertion)
+      val fromTastyRun = fromTastyCompiler.newRun(fromTastyCtx)
+      fromTastyRun.compile(classNames)
+      assert(!fromTastyCtx.reporter.hasErrors)
+    }
+  }
+
+  def check(classNames: List[String], sources: List[SourceFile])(assertion: Map[String, Package] => Unit): Unit
+
+}
+
+trait CheckFromSource extends DottyDocTest {
+  override def check(classNames: List[String], sources: List[SourceFile])(assertion: Map[String, Package] => Unit): Unit = {
+    checkFromSource(sources)(assertion)
+  }
+}
+
+trait CheckFromTasty extends DottyDocTest {
+  override def check(classNames: List[String], sources: List[SourceFile])(assertion: Map[String, Package] => Unit): Unit = {
+    checkFromTasty(classNames, sources)(assertion)
   }
 }
