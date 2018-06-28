@@ -1,14 +1,54 @@
-21
-Complex(7,9)
-0.+(1.*(1)).+(2.*(0)).+(4.*(1)).+(8.*(0)).+(16.*(1))
-{
-  val arr3: scala.Array[scala.Int] = scala.Array.apply(1, 2, 4, 8, 16)
-  val arr4: scala.Array[scala.Int] = scala.Array.apply(1, 0, 1, 0, 1)
+10
+
+Complex(3,2)
+
+0.+(0.*(1)).+(1.*(0)).+(2.*(1)).+(4.*(0)).+(8.*(1))
+10
+
+((arr1: scala.Array[scala.Int], arr2: scala.Array[scala.Int]) => {
+  dotty.DottyPredef.assert(arr1.length.==(arr2.length))
   var sum: scala.Int = 0
-  scala.Predef.intWrapper(0).until(scala.Predef.intArrayOps(arr3).size).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(arr3.apply(i).*(arr4.apply(i)))))
+  var i: scala.Int = 0
+  while (i.<(scala.Predef.intArrayOps(arr1).size)) {
+    sum = sum.+(arr1.apply(i).*(arr2.apply(i)))
+    i = i.+(1)
+  }
   (sum: scala.Int)
-}
-{
-  val arr3: scala.Array[scala.Int] = scala.Array.apply(1, 2, 4, 8, 16)
-  arr3.apply(0).+(arr3.apply(2)).+(arr3.apply(4))
-}
+})
+10
+
+0.+(2).+(8)
+10
+
+((arr: scala.Array[scala.Int]) => {
+  dotty.DottyPredef.assert(arr.length.==(5))
+  arr.apply(0).+(arr.apply(2)).+(arr.apply(4))
+})
+10
+
+((arr: scala.Array[Complex[scala.Int]]) => {
+  dotty.DottyPredef.assert(arr.length.==(4))
+  Complex.apply[scala.Int]({
+    Complex.apply[scala.Int](arr.apply(0).re.*({
+      Complex.apply[scala.Int](0, 1)
+    }.re).-(arr.apply(0).im.*({
+      Complex.apply[scala.Int](0, 1)
+    }.im)), arr.apply(0).re.*({
+      Complex.apply[scala.Int](0, 1)
+    }.im).+(arr.apply(0).im.*({
+      Complex.apply[scala.Int](0, 1)
+    }.re)))
+  }.re.+(arr.apply(3).re), {
+    Complex.apply[scala.Int](arr.apply(0).re.*({
+      Complex.apply[scala.Int](0, 1)
+    }.re).-(arr.apply(0).im.*({
+      Complex.apply[scala.Int](0, 1)
+    }.im)), arr.apply(0).re.*({
+      Complex.apply[scala.Int](0, 1)
+    }.im).+(arr.apply(0).im.*({
+      Complex.apply[scala.Int](0, 1)
+    }.re)))
+  }.im.+(arr.apply(3).im))
+})
+Complex(3,2)
+
