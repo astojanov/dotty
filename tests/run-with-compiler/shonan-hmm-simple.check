@@ -1,0 +1,14 @@
+21
+Complex(7,9)
+0.+(1.*(1)).+(2.*(0)).+(4.*(1)).+(8.*(0)).+(16.*(1))
+{
+  val arr3: scala.Array[scala.Int] = scala.Array.apply(1, 2, 4, 8, 16)
+  val arr4: scala.Array[scala.Int] = scala.Array.apply(1, 0, 1, 0, 1)
+  var sum: scala.Int = 0
+  scala.Predef.intWrapper(0).until(scala.Predef.intArrayOps(arr3).size).foreach[scala.Unit](((i: scala.Int) => sum = sum.+(arr3.apply(i).*(arr4.apply(i)))))
+  (sum: scala.Int)
+}
+{
+  val arr3: scala.Array[scala.Int] = scala.Array.apply(1, 2, 4, 8, 16)
+  arr3.apply(0).+(arr3.apply(2)).+(arr3.apply(4))
+}
