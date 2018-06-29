@@ -153,7 +153,7 @@ object Test {
     val blasExprIntExpr = new Blas1(new RingIntExpr, new ExprVecOps)
     val resCode2: Expr[(Array[Int], Array[Int]) => Int] = '{
       (arr1, arr2) =>
-        assert(arr1.length == arr2.length)
+        if (arr1.length != arr2.length) throw new Exception("...")
         ~{
           blasExprIntExpr.dot(
             new Vec('(arr1.size), i => '(arr1(~i))),
@@ -177,7 +177,7 @@ object Test {
     val blasExprIntPVExpr = new Blas1(new RingPV[Int](new RingInt, new RingIntExpr), new StaticVecOps)
     val resCode4: Expr[Array[Int] => Int] = '{
       arr =>
-        assert(arr.length == ~vec2.size.toExpr)
+        if (arr.length != ~vec2.size.toExpr) throw new Exception("...")
         ~{
           blasExprIntPVExpr.dot(
             new Vec(vec2.size, i => Dyn('(arr(~i.toExpr)))),
@@ -194,7 +194,7 @@ object Test {
     val blasExprComplexPVInt = new Blas1[Int, Complex[PV[Int]]](new RingComplex(new RingPV[Int](new RingInt, new RingIntExpr)), new StaticVecOps)
     val resCode5: Expr[Array[Complex[Int]] => Complex[Int]] = '{
       arr =>
-        assert(arr.length == ~cmpxVec2.size.toExpr)
+        if (arr.length != ~cmpxVec2.size.toExpr) throw new Exception("...")
         ~{
           val cpx = blasExprComplexPVInt.dot(
             new Vec(cmpxVec2.size, i => Complex(Dyn('(arr(~i.toExpr).re)), Dyn('(arr(~i.toExpr).im)))),
