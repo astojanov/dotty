@@ -1,6 +1,6 @@
 10
 
-Complex(3,2)
+Complex(4,3)
 
 0.+(0.*(1)).+(1.*(0)).+(2.*(1)).+(4.*(0)).+(8.*(1))
 10
@@ -28,27 +28,7 @@ Complex(3,2)
 
 ((arr: scala.Array[Complex[scala.Int]]) => {
   dotty.DottyPredef.assert(arr.length.==(4))
-  Complex.apply[scala.Int]({
-    Complex.apply[scala.Int](arr.apply(0).re.*({
-      Complex.apply[scala.Int](0, 1)
-    }.re).-(arr.apply(0).im.*({
-      Complex.apply[scala.Int](0, 1)
-    }.im)), arr.apply(0).re.*({
-      Complex.apply[scala.Int](0, 1)
-    }.im).+(arr.apply(0).im.*({
-      Complex.apply[scala.Int](0, 1)
-    }.re)))
-  }.re.+(arr.apply(3).re), {
-    Complex.apply[scala.Int](arr.apply(0).re.*({
-      Complex.apply[scala.Int](0, 1)
-    }.re).-(arr.apply(0).im.*({
-      Complex.apply[scala.Int](0, 1)
-    }.im)), arr.apply(0).re.*({
-      Complex.apply[scala.Int](0, 1)
-    }.im).+(arr.apply(0).im.*({
-      Complex.apply[scala.Int](0, 1)
-    }.re)))
-  }.im.+(arr.apply(3).im))
+  Complex.apply[scala.Int](0.-(arr.apply(0).im).+(0.-(arr.apply(2).im)).+(arr.apply(3).re.*(2)), arr.apply(0).re.+(arr.apply(2).re).+(arr.apply(3).im.*(2)))
 })
-Complex(3,2)
+Complex(4,3)
 

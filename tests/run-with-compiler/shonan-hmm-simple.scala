@@ -32,14 +32,6 @@ class RingComplex[U](u: Ring[U]) extends Ring[Complex[U]] {
   val mul  = (x, y) => Complex(u.sub(u.mul(x.re, y.re), u.mul(x.im, y.im)), u.add(u.mul(x.re, y.im), u.mul(x.im, y.re)))
 }
 
-class RingComplexExpr[U: Type](u: Ring[Expr[U]]) extends Ring[Expr[Complex[U]]] {
-  val zero = '(Complex(~u.zero, ~u.zero))
-  val one  = '(Complex(~u.one, ~u.zero))
-  val add  = (x, y) => '(Complex(~u.add('((~x).re), '((~y).re)), ~u.add('((~x).im), '((~y).im))))
-  val sub  = (x, y) => '(Complex(~u.sub('((~x).re), '((~y).re)), ~u.sub('((~x).im), '((~y).im))))
-  val mul  = (x, y) => '(Complex(~u.sub(u.mul('((~x).re), '((~y).re)), u.mul('((~x).im), '((~y).im))), ~u.add(u.mul('((~x).re), '((~y).im)), u.mul('((~x).im), '((~y).re)))))
-}
-
 sealed trait PV[T] {
   def expr(implicit l: Liftable[T]): Expr[T]
 }
@@ -60,7 +52,6 @@ class RingPV[U: Liftable](u: Ring[U], eu: Ring[Expr[U]]) extends Ring[PV[U]] {
     case (x, y) => Dyn(eu.add(x.expr, y.expr))
   }
   val sub = (x: PV[U], y: PV[U]) => (x, y) match {
-    case (Sta(u.zero), x) => x
     case (x, Sta(u.zero)) => x
     case (Sta(x), Sta(y)) => Sta(u.sub(x, y))
     case (x, y) => Dyn(eu.sub(x.expr, y.expr))
@@ -130,7 +121,7 @@ object Test {
     val arr1 = Array(0, 1, 2, 4, 8)
     val arr2 = Array(1, 0, 1, 0, 1)
     val cmpxArr1 = Array(Complex(1, 0), Complex(2, 3), Complex(0, 2), Complex(3, 1))
-    val cmpxArr2 = Array(Complex(0, 1), Complex(0, 0), Complex(0, 0), Complex(1, 0))
+    val cmpxArr2 = Array(Complex(0, 1), Complex(0, 0), Complex(0, 1), Complex(2, 0))
 
     val vec1 = new Vec(arr1.size, i => arr1(i))
     val vec2 = new Vec(arr2.size, i => arr2(i))
@@ -200,21 +191,21 @@ object Test {
     println()
 
     import Complex.isLiftable
-    val blasExprComplexIntPVExpr = new Blas1(new RingPV(new RingComplex(new RingInt), new RingComplexExpr(new RingIntExpr)), new StaticVecOps)
+    val blasExprComplexPVInt = new Blas1[Int, Complex[PV[Int]]](new RingComplex(new RingPV[Int](new RingInt, new RingIntExpr)), new StaticVecOps)
     val resCode5: Expr[Array[Complex[Int]] => Complex[Int]] = '{
       arr =>
         assert(arr.length == ~cmpxVec2.size.toExpr)
         ~{
-          blasExprComplexIntPVExpr.dot(
-            new Vec(cmpxVec2.size, i => Dyn('(arr(~i.toExpr)))),
-            cmpxVec2.map(i => Sta(i))
-          ).expr
+          val cpx = blasExprComplexPVInt.dot(
+            new Vec(cmpxVec2.size, i => Complex(Dyn('(arr(~i.toExpr).re)), Dyn('(arr(~i.toExpr).im)))),
+            new Vec(cmpxVec2.size, i => Complex(Sta(cmpxVec2.get(i).re), Sta(cmpxVec2.get(i).im)))
+          )
+          '(Complex(~cpx.re.expr, ~cpx.im.expr))
         }
     }
     println(resCode5.show)
     println(resCode5.run.apply(cmpxArr1))
     println()
-
   }
 
 }
