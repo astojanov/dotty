@@ -24,7 +24,7 @@ abstract class SimpleCommentsBase extends DottyDocTest {
 
     val className = "scala.HelloWorld"
 
-    check(className :: Nil, source :: Nil) { packages =>
+    check(className :: Nil, source :: Nil) { (ctx, packages) =>
       val traitCmt =
         packages("scala")
         .children.find(_.path.mkString(".") == "scala.HelloWorld")
