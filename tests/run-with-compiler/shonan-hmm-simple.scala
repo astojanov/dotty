@@ -206,6 +206,15 @@ object Test {
     println(resCode5.show)
     println(resCode5.run.apply(cmpxArr1))
     println()
+
+    val RingPVInt = new RingPV[Int](new RingInt, new RingIntExpr)
+    // Staged loop of dot product on vectors of Int or Expr[Int]
+    val dotIntOptExpr = new Blas1(RingPVInt, new StaticVecOps).dot
+    // will generate the code '{ ((arr: scala.Array[scala.Int]) => arr.apply(1).+(arr.apply(3))) }
+    val staticVec = Vec[Int, PV[Int]](5, i => Sta((i % 2)))
+    val code = '{(arr: Array[Int]) => ~dotIntOptExpr(Vec(5, i => Dyn('(arr(~i.toExpr)))), staticVec).expr }
+    println(code.show)
+    println()
   }
 
 }

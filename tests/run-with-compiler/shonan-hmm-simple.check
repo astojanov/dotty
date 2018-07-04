@@ -32,3 +32,5 @@ Complex(4,3)
 })
 Complex(4,3)
 
+((arr: scala.Array[scala.Int]) => arr.apply(1).+(arr.apply(3)))
+
